@@ -67,3 +67,32 @@ export interface ResolvedOccurrence {
   step: RoutineStepDef;
   scheduledAt: Date;
 }
+
+// ---------------------------------------------------------------------------
+// Tasks
+// ---------------------------------------------------------------------------
+
+export type TaskStatus = "OPEN" | "IN_PROGRESS" | "DONE" | "NOT_HAPPENING";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH";
+
+export interface Subtask {
+  id: string;
+  title: string;
+  done: boolean;
+}
+
+export interface Task {
+  id: string;
+  title: string;
+  notes: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  /** "YYYY-MM-DD" or null for someday/no date */
+  dueDate: string | null;
+  project: string | null;
+  tags: string[];
+  subtasks: Subtask[];
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
