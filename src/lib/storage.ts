@@ -1,9 +1,14 @@
 import type {
   AppSettings,
+  AuslanPreferences,
   HrAssessment,
   HrCourseSettings,
   HrModule,
   HrReferenceNote,
+  LearningArea,
+  LearningResource,
+  LearningSession,
+  LearningTopic,
   RoutineOccurrence,
   Task,
 } from "./types";
@@ -13,7 +18,7 @@ const DB_NAME = "nightshift-os";
 // Bumping this only ever ADDS object stores in onupgradeneeded — existing
 // stores and their data are left alone, so this is a safe, additive
 // migration, not a reset.
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_SETTINGS = "settings";
 const STORE_OCCURRENCES = "occurrences";
 const STORE_TASKS = "tasks";
@@ -21,7 +26,12 @@ const STORE_HR_MODULES = "hr_modules";
 const STORE_HR_ASSESSMENTS = "hr_assessments";
 const STORE_HR_COURSE_SETTINGS = "hr_course_settings";
 const STORE_HR_REFERENCE_NOTES = "hr_reference_notes";
+const STORE_LEARNING_RESOURCES = "learning_resources";
+const STORE_LEARNING_SESSIONS = "learning_sessions";
+const STORE_LEARNING_TOPICS = "learning_topics";
+const STORE_AUSLAN_PREFS = "auslan_preferences";
 const SETTINGS_KEY = "app";
+const AUSLAN_PREFS_KEY = "auslan";
 const HR_COURSE_SETTINGS_KEY = "hr";
 
 function openDb(): Promise<IDBDatabase> {
@@ -53,6 +63,21 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_HR_REFERENCE_NOTES)) {
         db.createObjectStore(STORE_HR_REFERENCE_NOTES, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_LEARNING_RESOURCES)) {
+        const store = db.createObjectStore(STORE_LEARNING_RESOURCES, { keyPath: "id" });
+        store.createIndex("byLearningArea", "learningArea");
+      }
+      if (!db.objectStoreNames.contains(STORE_LEARNING_SESSIONS)) {
+        const store = db.createObjectStore(STORE_LEARNING_SESSIONS, { keyPath: "id" });
+        store.createIndex("byLearningArea", "learningArea");
+      }
+      if (!db.objectStoreNames.contains(STORE_LEARNING_TOPICS)) {
+        const store = db.createObjectStore(STORE_LEARNING_TOPICS, { keyPath: "id" });
+        store.createIndex("byLearningArea", "learningArea");
+      }
+      if (!db.objectStoreNames.contains(STORE_AUSLAN_PREFS)) {
+        db.createObjectStore(STORE_AUSLAN_PREFS);
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -218,6 +243,102 @@ export async function saveHrReferenceNote(note: HrReferenceNote): Promise<void> 
   await withStore(STORE_HR_REFERENCE_NOTES, "readwrite", (s) => s.put(note));
 }
 
+// --- Shared learning infrastructure --------------------------------------
+
+export async function loadLearningResources(area: LearningArea): Promise<LearningResource[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_LEARNING_RESOURCES, "readonly");
+    const idx = tx.objectStore(STORE_LEARNING_RESOURCES).index("byLearningArea");
+    const req = idx.getAll(IDBKeyRange.only(area));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => db.close();
+  });
+}
+
+export async function saveLearningResource(resource: LearningResource): Promise<void> {
+  await withStore(STORE_LEARNING_RESOURCES, "readwrite", (s) => s.put(resource));
+}
+
+export async function deleteLearningResource(id: string): Promise<void> {
+  await withStore(STORE_LEARNING_RESOURCES, "readwrite", (s) => s.delete(id));
+}
+
+export async function loadLearningSessions(area: LearningArea): Promise<LearningSession[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_LEARNING_SESSIONS, "readonly");
+    const idx = tx.objectStore(STORE_LEARNING_SESSIONS).index("byLearningArea");
+    const req = idx.getAll(IDBKeyRange.only(area));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => db.close();
+  });
+}
+
+export async function saveLearningSession(session: LearningSession): Promise<void> {
+  await withStore(STORE_LEARNING_SESSIONS, "readwrite", (s) => s.put(session));
+}
+
+export async function loadLearningTopics(area: LearningArea): Promise<LearningTopic[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_LEARNING_TOPICS, "readonly");
+    const idx = tx.objectStore(STORE_LEARNING_TOPICS).index("byLearningArea");
+    const req = idx.getAll(IDBKeyRange.only(area));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => db.close();
+  });
+}
+
+export async function saveLearningTopic(topic: LearningTopic): Promise<void> {
+  await withStore(STORE_LEARNING_TOPICS, "readwrite", (s) => s.put(topic));
+}
+
+export async function seedLearningTopicsIfEmpty(
+  area: LearningArea,
+  topics: LearningTopic[]
+): Promise<void> {
+  const existing = await loadLearningTopics(area);
+  if (existing.length > 0) return;
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_LEARNING_TOPICS, "readwrite");
+    const store = tx.objectStore(STORE_LEARNING_TOPICS);
+    for (const t of topics) store.put(t);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+const DEFAULT_AUSLAN_PREFS: AuslanPreferences = {
+  dominantHand: "UNSPECIFIED",
+  regionalVariation: "SOUTHERN",
+};
+
+export async function loadAuslanPreferences(): Promise<AuslanPreferences> {
+  try {
+    const stored = await withStore<AuslanPreferences | undefined>(
+      STORE_AUSLAN_PREFS,
+      "readonly",
+      (s) => s.get(AUSLAN_PREFS_KEY)
+    );
+    if (!stored) return DEFAULT_AUSLAN_PREFS;
+    return { ...DEFAULT_AUSLAN_PREFS, ...stored };
+  } catch {
+    return DEFAULT_AUSLAN_PREFS;
+  }
+}
+
+export async function saveAuslanPreferences(prefs: AuslanPreferences): Promise<void> {
+  await withStore(STORE_AUSLAN_PREFS, "readwrite", (s) => s.put(prefs, AUSLAN_PREFS_KEY));
+}
+
 /** Full local backup — everything the app knows, in one downloadable file. */
 export async function exportAll(): Promise<{
   exportedAt: string;
@@ -228,6 +349,10 @@ export async function exportAll(): Promise<{
   hrAssessments: HrAssessment[];
   hrCourseSettings: HrCourseSettings;
   hrReferenceNotes: HrReferenceNote[];
+  learningResources: LearningResource[];
+  learningSessions: LearningSession[];
+  learningTopics: LearningTopic[];
+  auslanPreferences: AuslanPreferences;
 }> {
   const settings = await loadSettings();
   const occurrences = await getAllFromStore<RoutineOccurrence>(STORE_OCCURRENCES);
@@ -236,6 +361,10 @@ export async function exportAll(): Promise<{
   const hrAssessments = await loadHrAssessments();
   const hrCourseSettings = await loadHrCourseSettings();
   const hrReferenceNotes = await loadHrReferenceNotes();
+  const learningResources = await getAllFromStore<LearningResource>(STORE_LEARNING_RESOURCES);
+  const learningSessions = await getAllFromStore<LearningSession>(STORE_LEARNING_SESSIONS);
+  const learningTopics = await getAllFromStore<LearningTopic>(STORE_LEARNING_TOPICS);
+  const auslanPreferences = await loadAuslanPreferences();
   return {
     exportedAt: new Date().toISOString(),
     settings,
@@ -245,5 +374,9 @@ export async function exportAll(): Promise<{
     hrAssessments,
     hrCourseSettings,
     hrReferenceNotes,
+    learningResources,
+    learningSessions,
+    learningTopics,
+    auslanPreferences,
   };
 }

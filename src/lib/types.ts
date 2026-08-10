@@ -165,3 +165,90 @@ export interface HrReferenceNote {
   favourite: boolean;
   note: string;
 }
+
+// ---------------------------------------------------------------------------
+// Shared learning infrastructure (Auslan / Escrima / Japanese)
+// ---------------------------------------------------------------------------
+
+export type LearningArea = "AUSLAN" | "ESCRIMA" | "JAPANESE";
+
+export type ResourceType =
+  | "DOCUMENT"
+  | "PDF"
+  | "WORKSHEET"
+  | "ANSWER_KEY"
+  | "IMAGE"
+  | "REFERENCE_CHART"
+  | "VIDEO"
+  | "BOOK"
+  | "CHEAT_SHEET"
+  | "COURSE"
+  | "WEBSITE"
+  | "EXTERNAL_LINK"
+  | "OTHER";
+
+export type ResourceSourceType = "GOOGLE_DRIVE" | "EXTERNAL_WEB" | "APP_RESOURCE" | "USER_CREATED";
+
+export type ResourceStatus =
+  | "UNREAD"
+  | "IN_PROGRESS"
+  | "REVIEW"
+  | "COMPLETE"
+  | "REFERENCE"
+  | "ARCHIVED"
+  | "NEEDS_REVIEW";
+
+export interface LearningResource {
+  id: string;
+  learningArea: LearningArea;
+  title: string;
+  resourceType: ResourceType;
+  sourceType: ResourceSourceType;
+  /** The Drive/external URL. Never a fabricated link — blank until supplied. */
+  sourceURL: string;
+  category: string;
+  subcategory: string;
+  level: string;
+  notes: string;
+  status: ResourceStatus;
+  favourite: boolean;
+  lastOpened: string | null;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LearningSession {
+  id: string;
+  learningArea: LearningArea;
+  dateTime: string; // ISO
+  operationalDay: string; // "YYYY-MM-DD"
+  durationMinutes: number;
+  activityType: string;
+  focus: string;
+  notes: string;
+  completed: boolean;
+}
+
+export type TopicStatus = "NOT_STARTED" | "IN_PROGRESS" | "REVIEW" | "COMPLETE";
+
+export interface LearningTopic {
+  id: string;
+  learningArea: LearningArea;
+  area: string; // section name, e.g. "Fingerspelling"
+  status: TopicStatus;
+  notes: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Auslan
+// ---------------------------------------------------------------------------
+
+export type DominantHand = "RIGHT" | "LEFT" | "UNSPECIFIED";
+export type RegionalVariation = "SOUTHERN" | "NORTHERN" | "UNSURE";
+
+export interface AuslanPreferences {
+  dominantHand: DominantHand;
+  regionalVariation: RegionalVariation;
+}
