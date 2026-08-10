@@ -252,3 +252,48 @@ export interface AuslanPreferences {
   dominantHand: DominantHand;
   regionalVariation: RegionalVariation;
 }
+
+// ---------------------------------------------------------------------------
+// Escrima / Arnis / Kali
+// ---------------------------------------------------------------------------
+
+export type TrainingSkillStatus =
+  | "NOT_STARTED"
+  | "LEARNING"
+  | "PRACTISING"
+  | "COMFORTABLE"
+  | "REVIEW"
+  | "PROFICIENT";
+
+export interface TrainingSkill {
+  id: string;
+  area: string;
+  subarea: string;
+  name: string;
+  status: TrainingSkillStatus;
+  lastPractised: string | null; // "YYYY-MM-DD"
+  timesPractised: number;
+  practiceMinutes: number;
+  confidence: number; // 1-5
+  leftSideConfidence: number | null;
+  rightSideConfidence: number | null;
+  notes: string;
+  nextReview: string | null;
+  updatedAt: string;
+}
+
+export interface TrainingSession {
+  id: string;
+  dateTime: string; // ISO
+  operationalDay: string;
+  durationMinutes: number;
+  plannedFocus: string;
+  actualFocus: string;
+  skillsPractised: string[]; // TrainingSkill ids
+  energyBefore: number | null;
+  energyAfter: number | null;
+  confidenceNotes: string;
+  technicalNotes: string;
+  nextTime: string;
+  completed: boolean;
+}

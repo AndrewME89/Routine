@@ -11,6 +11,8 @@ import type {
   LearningTopic,
   RoutineOccurrence,
   Task,
+  TrainingSession,
+  TrainingSkill,
 } from "./types";
 import { DEFAULT_SETTINGS } from "./defaultSettings";
 
@@ -18,7 +20,7 @@ const DB_NAME = "nightshift-os";
 // Bumping this only ever ADDS object stores in onupgradeneeded — existing
 // stores and their data are left alone, so this is a safe, additive
 // migration, not a reset.
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const STORE_SETTINGS = "settings";
 const STORE_OCCURRENCES = "occurrences";
 const STORE_TASKS = "tasks";
@@ -30,6 +32,8 @@ const STORE_LEARNING_RESOURCES = "learning_resources";
 const STORE_LEARNING_SESSIONS = "learning_sessions";
 const STORE_LEARNING_TOPICS = "learning_topics";
 const STORE_AUSLAN_PREFS = "auslan_preferences";
+const STORE_TRAINING_SKILLS = "training_skills";
+const STORE_TRAINING_SESSIONS = "training_sessions";
 const SETTINGS_KEY = "app";
 const AUSLAN_PREFS_KEY = "auslan";
 const HR_COURSE_SETTINGS_KEY = "hr";
@@ -78,6 +82,13 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_AUSLAN_PREFS)) {
         db.createObjectStore(STORE_AUSLAN_PREFS);
+      }
+      if (!db.objectStoreNames.contains(STORE_TRAINING_SKILLS)) {
+        const store = db.createObjectStore(STORE_TRAINING_SKILLS, { keyPath: "id" });
+        store.createIndex("byArea", "area");
+      }
+      if (!db.objectStoreNames.contains(STORE_TRAINING_SESSIONS)) {
+        db.createObjectStore(STORE_TRAINING_SESSIONS, { keyPath: "id" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -339,6 +350,28 @@ export async function saveAuslanPreferences(prefs: AuslanPreferences): Promise<v
   await withStore(STORE_AUSLAN_PREFS, "readwrite", (s) => s.put(prefs, AUSLAN_PREFS_KEY));
 }
 
+// --- Escrima / training ----------------------------------------------------
+
+export async function seedTrainingSkillsIfEmpty(skills: TrainingSkill[]): Promise<void> {
+  await putAllIfEmpty(STORE_TRAINING_SKILLS, skills);
+}
+
+export async function loadTrainingSkills(): Promise<TrainingSkill[]> {
+  return getAllFromStore<TrainingSkill>(STORE_TRAINING_SKILLS);
+}
+
+export async function saveTrainingSkill(skill: TrainingSkill): Promise<void> {
+  await withStore(STORE_TRAINING_SKILLS, "readwrite", (s) => s.put(skill));
+}
+
+export async function loadTrainingSessions(): Promise<TrainingSession[]> {
+  return getAllFromStore<TrainingSession>(STORE_TRAINING_SESSIONS);
+}
+
+export async function saveTrainingSession(session: TrainingSession): Promise<void> {
+  await withStore(STORE_TRAINING_SESSIONS, "readwrite", (s) => s.put(session));
+}
+
 /** Full local backup — everything the app knows, in one downloadable file. */
 export async function exportAll(): Promise<{
   exportedAt: string;
@@ -353,6 +386,8 @@ export async function exportAll(): Promise<{
   learningSessions: LearningSession[];
   learningTopics: LearningTopic[];
   auslanPreferences: AuslanPreferences;
+  trainingSkills: TrainingSkill[];
+  trainingSessions: TrainingSession[];
 }> {
   const settings = await loadSettings();
   const occurrences = await getAllFromStore<RoutineOccurrence>(STORE_OCCURRENCES);
@@ -365,6 +400,8 @@ export async function exportAll(): Promise<{
   const learningSessions = await getAllFromStore<LearningSession>(STORE_LEARNING_SESSIONS);
   const learningTopics = await getAllFromStore<LearningTopic>(STORE_LEARNING_TOPICS);
   const auslanPreferences = await loadAuslanPreferences();
+  const trainingSkills = await loadTrainingSkills();
+  const trainingSessions = await loadTrainingSessions();
   return {
     exportedAt: new Date().toISOString(),
     settings,
@@ -378,5 +415,7 @@ export async function exportAll(): Promise<{
     learningSessions,
     learningTopics,
     auslanPreferences,
+    trainingSkills,
+    trainingSessions,
   };
 }

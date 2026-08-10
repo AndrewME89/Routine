@@ -5,6 +5,7 @@ import SettingsPage from "./pages/SettingsPage";
 import TasksPage from "./pages/TasksPage";
 import HrStudyPage from "./pages/HrStudyPage";
 import AuslanPage from "./pages/AuslanPage";
+import EscrimaPage from "./pages/EscrimaPage";
 import ComingSoonPage from "./pages/ComingSoonPage";
 
 const NAV_ITEMS: { id: string; label: string; icon: string; ready: boolean }[] = [
@@ -15,7 +16,7 @@ const NAV_ITEMS: { id: string; label: string; icon: string; ready: boolean }[] =
   { id: "auslan", label: "Auslan", icon: "✋", ready: true },
   { id: "meals", label: "Meals", icon: "♨", ready: false },
   { id: "chores", label: "Chores", icon: "⌂", ready: false },
-  { id: "escrima", label: "Escrima", icon: "⚔", ready: false },
+  { id: "escrima", label: "Escrima", icon: "⚔", ready: true },
   { id: "money", label: "Money", icon: "$", ready: false },
   { id: "health", label: "Health", icon: "♡", ready: false },
   { id: "life-admin", label: "Life Admin", icon: "▣", ready: false },
@@ -71,8 +72,9 @@ export default function App() {
         {page === "tasks" && <TasksPage />}
         {page === "hr" && <HrStudyPage />}
         {page === "auslan" && <AuslanPage />}
+        {page === "escrima" && <EscrimaPage />}
         {page === "settings" && <SettingsPage data={data} />}
-        {page !== "today" && page !== "tasks" && page !== "hr" && page !== "auslan" && page !== "settings" && (
+        {page !== "today" && page !== "tasks" && page !== "hr" && page !== "auslan" && page !== "escrima" && page !== "settings" && (
           <ComingSoonPage label={NAV_ITEMS.find((n) => n.id === page)?.label ?? ""} />
         )}
       </main>
