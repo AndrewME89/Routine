@@ -96,3 +96,72 @@ export interface Task {
   updatedAt: string;
   completedAt: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// HR Study (Certificate IV in Human Resource Management)
+// ---------------------------------------------------------------------------
+
+export type HrModuleStatus =
+  | "LOCKED"
+  | "AVAILABLE"
+  | "ACTIVE"
+  | "ASSESSMENTS_SUBMITTED"
+  | "AWAITING_RESULT"
+  | "COMPETENT"
+  | "NOT_YET_COMPETENT";
+
+export interface HrModule {
+  id: string; // matches seed order, e.g. "hr-module-1"
+  order: number;
+  unitCode: string | null;
+  title: string;
+  assessmentsPlanned: number;
+  indicativeHours: number;
+  status: HrModuleStatus;
+  topicsCompleted: number;
+  topicsTotal: number;
+  activitiesCompleted: number;
+  activitiesTotal: number;
+  notes: string;
+  lastStudied: string | null; // "YYYY-MM-DD"
+  updatedAt: string;
+}
+
+export type HrAssessmentStatus =
+  | "NOT_STARTED"
+  | "IN_PROGRESS"
+  | "SUBMITTED"
+  | "AWAITING_FEEDBACK"
+  | "COMPETENT"
+  | "CHANGES_REQUIRED";
+
+export interface HrAssessment {
+  id: string;
+  moduleId: string;
+  title: string;
+  /** free text — "UNKNOWN" until the actual assessment specifies a type */
+  assessmentType: string;
+  status: HrAssessmentStatus;
+  submittedDate: string | null;
+  attemptNumber: number;
+  feedbackNotes: string;
+  updatedAt: string;
+}
+
+export type SwlaStatus = "UNKNOWN" | "YES" | "NO" | "UNSURE";
+
+export interface HrCourseSettings {
+  setupComplete: boolean;
+  enrolmentStartDate: string | null;
+  enrolmentEndDate: string | null;
+  extensionMonthsUsed: number;
+  weeklyStudyTargetHours: number | null;
+  swlaStatus: SwlaStatus;
+}
+
+export interface HrReferenceNote {
+  /** legislation or glossary seed id */
+  id: string;
+  favourite: boolean;
+  note: string;
+}

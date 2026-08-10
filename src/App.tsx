@@ -3,13 +3,14 @@ import { useAppData } from "./lib/useAppData";
 import TodayPage from "./pages/TodayPage";
 import SettingsPage from "./pages/SettingsPage";
 import TasksPage from "./pages/TasksPage";
+import HrStudyPage from "./pages/HrStudyPage";
 import ComingSoonPage from "./pages/ComingSoonPage";
 
 const NAV_ITEMS: { id: string; label: string; icon: string; ready: boolean }[] = [
   { id: "today", label: "Today", icon: "◫", ready: true },
   { id: "tasks", label: "Tasks", icon: "✓", ready: true },
   { id: "routines", label: "Routines", icon: "◷", ready: false },
-  { id: "hr", label: "HR Study", icon: "▤", ready: false },
+  { id: "hr", label: "HR Study", icon: "▤", ready: true },
   { id: "meals", label: "Meals", icon: "♨", ready: false },
   { id: "chores", label: "Chores", icon: "⌂", ready: false },
   { id: "escrima", label: "Escrima", icon: "⚔", ready: false },
@@ -66,8 +67,9 @@ export default function App() {
       <main className="flex-1 min-w-0">
         {page === "today" && <TodayPage data={data} />}
         {page === "tasks" && <TasksPage />}
+        {page === "hr" && <HrStudyPage />}
         {page === "settings" && <SettingsPage data={data} />}
-        {page !== "today" && page !== "tasks" && page !== "settings" && (
+        {page !== "today" && page !== "tasks" && page !== "hr" && page !== "settings" && (
           <ComingSoonPage label={NAV_ITEMS.find((n) => n.id === page)?.label ?? ""} />
         )}
       </main>
