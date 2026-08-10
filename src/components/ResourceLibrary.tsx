@@ -227,7 +227,7 @@ function ResourceRow({
           />
           <button
             onClick={() => learning.removeResource(r.id)}
-            className="text-muted hover:text-warn px-1"
+            className="text-muted hover:text-danger px-1"
           >
             Delete
           </button>

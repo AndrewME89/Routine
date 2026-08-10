@@ -134,7 +134,7 @@ export default function JapanesePage() {
                       <div className="text-lg">{c.front}</div>
                       <button
                         onClick={() => jp.removeFlashcard(c.id)}
-                        className="text-xs text-faint hover:text-warn"
+                        className="text-xs text-faint hover:text-danger"
                       >
                         Delete
                       </button>
@@ -247,7 +247,7 @@ function WorksheetRow({
             </option>
           ))}
         </select>
-        <button onClick={() => jp.removeWorksheet(w.id)} className="text-xs text-faint hover:text-warn">
+        <button onClick={() => jp.removeWorksheet(w.id)} className="text-xs text-faint hover:text-danger">
           Delete
         </button>
       </div>

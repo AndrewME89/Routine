@@ -35,7 +35,7 @@ export default function App() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 shrink-0 border-r border-border bg-surface flex flex-col">
+      <aside className="w-60 shrink-0 border-r border-border bg-side flex flex-col">
         <div className="flex items-center gap-3 px-4 py-4 border-b border-border">
           <div className="h-9 w-9 rounded-xl bg-accent/20 text-accent-bright grid place-items-center font-mono font-bold">
             NO

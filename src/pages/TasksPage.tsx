@@ -291,7 +291,7 @@ function TaskRow({
             </button>
             <button
               onClick={onRemove}
-              className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-muted hover:text-warn ml-auto"
+              className="text-xs px-2.5 py-1.5 rounded-lg border border-border text-muted hover:text-danger ml-auto"
             >
               Delete
             </button>

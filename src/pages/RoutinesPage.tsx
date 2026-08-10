@@ -134,7 +134,7 @@ function StepRow({ step, rt }: { step: RoutineStepDef; rt: ReturnType<typeof use
           </select>
           <button
             onClick={() => rt.removeStep(step.id)}
-            className="text-xs text-muted hover:text-warn px-2 ml-auto"
+            className="text-xs text-muted hover:text-danger px-2 ml-auto"
           >
             Remove
           </button>

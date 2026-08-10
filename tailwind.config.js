@@ -4,37 +4,46 @@ export default {
   theme: {
     extend: {
       colors: {
-        base: "#0a0b10",
-        surface: "#13151c",
-        "surface-2": "#191b24",
-        border: "#242732",
+        // These match the real Nightshift OS app's compiled CSS tokens
+        // exactly (pulled from its own stylesheet), not guessed.
+        base: "#0b0d12",
+        side: "#0e1118", // sidebar — distinct from panel, slightly darker
+        surface: "#141821", // panel
+        "surface-2": "#191e29", // panel2
+        border: "#272d3a", // line
         accent: {
-          DEFAULT: "#7c6cf6",
-          soft: "#7c6cf61a",
-          bright: "#9b8dff",
+          DEFAULT: "#9b87f5", // violet
+          soft: "#9b87f51a",
+          bright: "#b3a3f8",
         },
-        warn: "#e8a33d",
-        good: "#4fd1a5",
-        ink: "#e9eaf2",
-        muted: "#8b8fa3",
+        cyan: "#62d9cf",
+        warn: "#f0b85a", // amber
+        good: "#78cf91", // green
+        danger: "#ec7f85", // red
+        ink: "#f3f5f7", // text
+        muted: "#9299a8",
         faint: "#5b5f70",
       },
       fontFamily: {
         sans: [
-          "Inter",
+          "Geist",
           "ui-sans-serif",
           "system-ui",
           "-apple-system",
           "Segoe UI",
           "sans-serif",
         ],
-        mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        mono: ["Geist Mono", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       borderRadius: {
-        xl: "0.875rem",
-        "2xl": "1.125rem",
+        xl: "0.75rem",
+        "2xl": "1rem",
+      },
+      boxShadow: {
+        panel: "0 18px 50px rgba(0,0,0,0.33)",
       },
     },
   },
   plugins: [],
 };
+
