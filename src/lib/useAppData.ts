@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AppSettings, DashboardMode, OccurrenceStatus, RoutineOccurrence } from "./types";
-import { loadSettings, saveSettings, loadOccurrencesForDay, saveOccurrence } from "./storage";
+import type { AppSettings, DashboardMode, OccurrenceStatus, RoutineOccurrence, RoutineStepDef } from "./types";
+import { loadSettings, saveSettings, loadOccurrencesForDay, saveOccurrence, loadRoutineSteps, seedRoutineStepsIfEmpty } from "./storage";
 import { detectDashboardMode, operationalDayForInstant } from "./operationalDay";
-import { resolveDay } from "./routineEngine";
+import { resolveDay, DEFAULT_ROUTINE_STEPS } from "./routineEngine";
 
 export function useAppData() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [now, setNow] = useState(new Date());
   const [occurrences, setOccurrences] = useState<RoutineOccurrence[]>([]);
+  const [steps, setSteps] = useState<RoutineStepDef[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Tick once a minute — enough to keep Now/Next honest without busywork.
@@ -17,10 +18,13 @@ export function useAppData() {
   }, []);
 
   useEffect(() => {
-    loadSettings().then((s) => {
+    (async () => {
+      await seedRoutineStepsIfEmpty(DEFAULT_ROUTINE_STEPS);
+      const [s, st] = await Promise.all([loadSettings(), loadRoutineSteps()]);
       setSettings(s);
+      setSteps(st);
       setLoading(false);
-    });
+    })();
   }, []);
 
   const operationalDay = useMemo(() => {
@@ -39,9 +43,9 @@ export function useAppData() {
   }, [settings, operationalDay]);
 
   const resolved = useMemo(() => {
-    if (!settings || !operationalDay || !mode) return [];
-    return resolveDay(settings, operationalDay, mode, occurrences);
-  }, [settings, operationalDay, mode, occurrences]);
+    if (!settings || !operationalDay || !mode || steps.length === 0) return [];
+    return resolveDay(settings, operationalDay, mode, occurrences, steps);
+  }, [settings, operationalDay, mode, occurrences, steps]);
 
   const setStatus = useCallback(
     async (stepId: string, status: OccurrenceStatus) => {
@@ -73,5 +77,5 @@ export function useAppData() {
     });
   }, []);
 
-  return { settings, now, operationalDay, mode, resolved, loading, setStatus, updateSettings };
+  return { settings, now, operationalDay, mode, resolved, steps, loading, setStatus, updateSettings };
 }

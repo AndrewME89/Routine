@@ -5,11 +5,16 @@ import type {
   HrCourseSettings,
   HrModule,
   HrReferenceNote,
+  JapaneseSettings,
+  JapaneseSkillConfidence,
+  JapaneseWorksheet,
   LearningArea,
+  LearningFlashcard,
   LearningResource,
   LearningSession,
   LearningTopic,
   RoutineOccurrence,
+  RoutineStepDef,
   Task,
   TrainingSession,
   TrainingSkill,
@@ -20,7 +25,7 @@ const DB_NAME = "nightshift-os";
 // Bumping this only ever ADDS object stores in onupgradeneeded — existing
 // stores and their data are left alone, so this is a safe, additive
 // migration, not a reset.
-const DB_VERSION = 5;
+const DB_VERSION = 7;
 const STORE_SETTINGS = "settings";
 const STORE_OCCURRENCES = "occurrences";
 const STORE_TASKS = "tasks";
@@ -34,8 +39,14 @@ const STORE_LEARNING_TOPICS = "learning_topics";
 const STORE_AUSLAN_PREFS = "auslan_preferences";
 const STORE_TRAINING_SKILLS = "training_skills";
 const STORE_TRAINING_SESSIONS = "training_sessions";
+const STORE_JAPANESE_SKILLS = "japanese_skill_confidence";
+const STORE_JAPANESE_WORKSHEETS = "japanese_worksheets";
+const STORE_JAPANESE_SETTINGS = "japanese_settings";
+const STORE_FLASHCARDS = "learning_flashcards";
+const STORE_ROUTINE_STEPS = "routine_steps";
 const SETTINGS_KEY = "app";
 const AUSLAN_PREFS_KEY = "auslan";
+const JAPANESE_SETTINGS_KEY = "japanese";
 const HR_COURSE_SETTINGS_KEY = "hr";
 
 function openDb(): Promise<IDBDatabase> {
@@ -89,6 +100,22 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_TRAINING_SESSIONS)) {
         db.createObjectStore(STORE_TRAINING_SESSIONS, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_JAPANESE_SKILLS)) {
+        db.createObjectStore(STORE_JAPANESE_SKILLS, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_JAPANESE_WORKSHEETS)) {
+        db.createObjectStore(STORE_JAPANESE_WORKSHEETS, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_JAPANESE_SETTINGS)) {
+        db.createObjectStore(STORE_JAPANESE_SETTINGS);
+      }
+      if (!db.objectStoreNames.contains(STORE_FLASHCARDS)) {
+        const store = db.createObjectStore(STORE_FLASHCARDS, { keyPath: "id" });
+        store.createIndex("byLearningArea", "learningArea");
+      }
+      if (!db.objectStoreNames.contains(STORE_ROUTINE_STEPS)) {
+        db.createObjectStore(STORE_ROUTINE_STEPS, { keyPath: "id" });
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -176,6 +203,28 @@ export async function loadOccurrencesForDay(
 
 export async function saveOccurrence(occurrence: RoutineOccurrence): Promise<void> {
   await withStore(STORE_OCCURRENCES, "readwrite", (s) => s.put(occurrence));
+}
+
+export async function loadAllOccurrences(): Promise<RoutineOccurrence[]> {
+  return getAllFromStore<RoutineOccurrence>(STORE_OCCURRENCES);
+}
+
+// --- Routine template -------------------------------------------------
+
+export async function seedRoutineStepsIfEmpty(steps: RoutineStepDef[]): Promise<void> {
+  await putAllIfEmpty(STORE_ROUTINE_STEPS, steps);
+}
+
+export async function loadRoutineSteps(): Promise<RoutineStepDef[]> {
+  return getAllFromStore<RoutineStepDef>(STORE_ROUTINE_STEPS);
+}
+
+export async function saveRoutineStep(step: RoutineStepDef): Promise<void> {
+  await withStore(STORE_ROUTINE_STEPS, "readwrite", (s) => s.put(step));
+}
+
+export async function deleteRoutineStep(id: string): Promise<void> {
+  await withStore(STORE_ROUTINE_STEPS, "readwrite", (s) => s.delete(id));
 }
 
 export async function loadTasks(): Promise<Task[]> {
@@ -372,6 +421,72 @@ export async function saveTrainingSession(session: TrainingSession): Promise<voi
   await withStore(STORE_TRAINING_SESSIONS, "readwrite", (s) => s.put(session));
 }
 
+// --- Japanese ---------------------------------------------------------
+
+export async function seedJapaneseSkillsIfEmpty(skills: JapaneseSkillConfidence[]): Promise<void> {
+  await putAllIfEmpty(STORE_JAPANESE_SKILLS, skills);
+}
+
+export async function loadJapaneseSkills(): Promise<JapaneseSkillConfidence[]> {
+  return getAllFromStore<JapaneseSkillConfidence>(STORE_JAPANESE_SKILLS);
+}
+
+export async function saveJapaneseSkill(skill: JapaneseSkillConfidence): Promise<void> {
+  await withStore(STORE_JAPANESE_SKILLS, "readwrite", (s) => s.put(skill));
+}
+
+export async function loadJapaneseWorksheets(): Promise<JapaneseWorksheet[]> {
+  return getAllFromStore<JapaneseWorksheet>(STORE_JAPANESE_WORKSHEETS);
+}
+
+export async function saveJapaneseWorksheet(w: JapaneseWorksheet): Promise<void> {
+  await withStore(STORE_JAPANESE_WORKSHEETS, "readwrite", (s) => s.put(w));
+}
+
+export async function deleteJapaneseWorksheet(id: string): Promise<void> {
+  await withStore(STORE_JAPANESE_WORKSHEETS, "readwrite", (s) => s.delete(id));
+}
+
+const DEFAULT_JAPANESE_SETTINGS: JapaneseSettings = { jlptSelfReported: null };
+
+export async function loadJapaneseSettings(): Promise<JapaneseSettings> {
+  try {
+    const stored = await withStore<JapaneseSettings | undefined>(
+      STORE_JAPANESE_SETTINGS,
+      "readonly",
+      (s) => s.get(JAPANESE_SETTINGS_KEY)
+    );
+    if (!stored) return DEFAULT_JAPANESE_SETTINGS;
+    return { ...DEFAULT_JAPANESE_SETTINGS, ...stored };
+  } catch {
+    return DEFAULT_JAPANESE_SETTINGS;
+  }
+}
+
+export async function saveJapaneseSettings(settings: JapaneseSettings): Promise<void> {
+  await withStore(STORE_JAPANESE_SETTINGS, "readwrite", (s) => s.put(settings, JAPANESE_SETTINGS_KEY));
+}
+
+export async function loadFlashcards(area: LearningArea): Promise<LearningFlashcard[]> {
+  const db = await openDb();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_FLASHCARDS, "readonly");
+    const idx = tx.objectStore(STORE_FLASHCARDS).index("byLearningArea");
+    const req = idx.getAll(IDBKeyRange.only(area));
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+    tx.oncomplete = () => db.close();
+  });
+}
+
+export async function saveFlashcard(card: LearningFlashcard): Promise<void> {
+  await withStore(STORE_FLASHCARDS, "readwrite", (s) => s.put(card));
+}
+
+export async function deleteFlashcard(id: string): Promise<void> {
+  await withStore(STORE_FLASHCARDS, "readwrite", (s) => s.delete(id));
+}
+
 /** Full local backup — everything the app knows, in one downloadable file. */
 export async function exportAll(): Promise<{
   exportedAt: string;
@@ -388,6 +503,11 @@ export async function exportAll(): Promise<{
   auslanPreferences: AuslanPreferences;
   trainingSkills: TrainingSkill[];
   trainingSessions: TrainingSession[];
+  japaneseSkills: JapaneseSkillConfidence[];
+  japaneseWorksheets: JapaneseWorksheet[];
+  japaneseSettings: JapaneseSettings;
+  flashcards: LearningFlashcard[];
+  routineSteps: RoutineStepDef[];
 }> {
   const settings = await loadSettings();
   const occurrences = await getAllFromStore<RoutineOccurrence>(STORE_OCCURRENCES);
@@ -402,6 +522,11 @@ export async function exportAll(): Promise<{
   const auslanPreferences = await loadAuslanPreferences();
   const trainingSkills = await loadTrainingSkills();
   const trainingSessions = await loadTrainingSessions();
+  const japaneseSkills = await loadJapaneseSkills();
+  const japaneseWorksheets = await loadJapaneseWorksheets();
+  const japaneseSettings = await loadJapaneseSettings();
+  const flashcards = await getAllFromStore<LearningFlashcard>(STORE_FLASHCARDS);
+  const routineSteps = await loadRoutineSteps();
   return {
     exportedAt: new Date().toISOString(),
     settings,
@@ -417,5 +542,10 @@ export async function exportAll(): Promise<{
     auslanPreferences,
     trainingSkills,
     trainingSessions,
+    japaneseSkills,
+    japaneseWorksheets,
+    japaneseSettings,
+    flashcards,
+    routineSteps,
   };
 }

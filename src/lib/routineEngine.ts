@@ -7,7 +7,7 @@ import type {
 } from "./types";
 import { minutesToTime, resolveClockAnchor, rosterForOperationalDay, timeToMinutes } from "./operationalDay";
 
-export const ROUTINE_STEPS: RoutineStepDef[] = [
+export const DEFAULT_ROUTINE_STEPS: RoutineStepDef[] = [
   {
     id: "wake",
     label: "Wake",
@@ -168,10 +168,11 @@ export function resolveDay(
   settings: AppSettings,
   operationalDay: string,
   mode: DashboardMode,
-  existingOccurrences: RoutineOccurrence[]
+  existingOccurrences: RoutineOccurrence[],
+  steps: RoutineStepDef[] = DEFAULT_ROUTINE_STEPS
 ): ResolvedOccurrence[] {
   const byStepId = new Map(existingOccurrences.map((o) => [o.stepId, o]));
-  const list = ROUTINE_STEPS.filter((step) => stepApplies(step, mode)).map((step) => {
+  const list = steps.filter((step) => stepApplies(step, mode)).map((step) => {
     const occurrence = byStepId.get(step.id) ?? defaultOccurrence(operationalDay, step.id);
     const scheduledAt = resolveAnchorTime(step, settings, operationalDay);
     return { occurrence, step, scheduledAt };

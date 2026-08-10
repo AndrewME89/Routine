@@ -3,20 +3,23 @@ import { useAppData } from "./lib/useAppData";
 import TodayPage from "./pages/TodayPage";
 import SettingsPage from "./pages/SettingsPage";
 import TasksPage from "./pages/TasksPage";
+import RoutinesPage from "./pages/RoutinesPage";
 import HrStudyPage from "./pages/HrStudyPage";
 import AuslanPage from "./pages/AuslanPage";
 import EscrimaPage from "./pages/EscrimaPage";
+import JapanesePage from "./pages/JapanesePage";
 import ComingSoonPage from "./pages/ComingSoonPage";
 
 const NAV_ITEMS: { id: string; label: string; icon: string; ready: boolean }[] = [
   { id: "today", label: "Today", icon: "◫", ready: true },
   { id: "tasks", label: "Tasks", icon: "✓", ready: true },
-  { id: "routines", label: "Routines", icon: "◷", ready: false },
+  { id: "routines", label: "Routines", icon: "◷", ready: true },
   { id: "hr", label: "HR Study", icon: "▤", ready: true },
   { id: "auslan", label: "Auslan", icon: "✋", ready: true },
   { id: "meals", label: "Meals", icon: "♨", ready: false },
   { id: "chores", label: "Chores", icon: "⌂", ready: false },
   { id: "escrima", label: "Escrima", icon: "⚔", ready: true },
+  { id: "japanese", label: "Japanese", icon: "字", ready: true },
   { id: "money", label: "Money", icon: "$", ready: false },
   { id: "health", label: "Health", icon: "♡", ready: false },
   { id: "life-admin", label: "Life Admin", icon: "▣", ready: false },
@@ -70,11 +73,20 @@ export default function App() {
       <main className="flex-1 min-w-0">
         {page === "today" && <TodayPage data={data} />}
         {page === "tasks" && <TasksPage />}
+        {page === "routines" && <RoutinesPage />}
         {page === "hr" && <HrStudyPage />}
         {page === "auslan" && <AuslanPage />}
         {page === "escrima" && <EscrimaPage />}
+        {page === "japanese" && <JapanesePage />}
         {page === "settings" && <SettingsPage data={data} />}
-        {page !== "today" && page !== "tasks" && page !== "hr" && page !== "auslan" && page !== "escrima" && page !== "settings" && (
+        {page !== "today" &&
+          page !== "tasks" &&
+          page !== "routines" &&
+          page !== "hr" &&
+          page !== "auslan" &&
+          page !== "escrima" &&
+          page !== "japanese" &&
+          page !== "settings" && (
           <ComingSoonPage label={NAV_ITEMS.find((n) => n.id === page)?.label ?? ""} />
         )}
       </main>

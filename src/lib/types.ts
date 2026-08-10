@@ -297,3 +297,53 @@ export interface TrainingSession {
   nextTime: string;
   completed: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Japanese
+// ---------------------------------------------------------------------------
+
+// Deliberately five states — no "Proficient" here, and no JLPT level is ever
+// implied by reaching Comfortable/Review.
+export type JapaneseSkillStatus = "NOT_STARTED" | "LEARNING" | "PRACTISING" | "COMFORTABLE" | "REVIEW";
+
+export interface JapaneseSkillConfidence {
+  id: string;
+  skill: string; // one of JAPANESE_SKILLS
+  status: JapaneseSkillStatus;
+  updatedAt: string;
+}
+
+export type WorksheetStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "REVIEW";
+
+export interface JapaneseWorksheet {
+  id: string;
+  title: string;
+  status: WorksheetStatus;
+  worksheetURL: string;
+  answerKeyURL: string;
+  /** Answer key content is never shown until the user explicitly asks. */
+  answerKeyRevealed: boolean;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LearningFlashcard {
+  id: string;
+  learningArea: LearningArea;
+  front: string; // Japanese
+  reading: string; // kana reading
+  romaji: string;
+  englishMeaning: string;
+  category: string;
+  sourceResource: string;
+  notes: string;
+  confidence: number; // 1-5
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface JapaneseSettings {
+  /** Only ever set if the user explicitly records one — never inferred. */
+  jlptSelfReported: string | null;
+}
