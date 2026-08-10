@@ -2,6 +2,7 @@ import type { useAppData } from "../lib/useAppData";
 import type { DashboardMode, OccurrenceStatus, ResolvedOccurrence } from "../lib/types";
 import { computeNowNext, minutesUntil } from "../lib/routineEngine";
 import { formatDayLabel, weekdayName } from "../lib/operationalDay";
+import FoodCard from "../components/FoodCard";
 
 const MODES: { id: DashboardMode; label: string }[] = [
   { id: "NORMAL", label: "Normal" },
@@ -114,6 +115,8 @@ export default function TodayPage({ data }: { data: ReturnType<typeof useAppData
           </div>
         </div>
       </div>
+
+      <FoodCard mode={mode} />
 
       <div className="space-y-6">
         {Object.entries(grouped).map(([phase, items]) => (

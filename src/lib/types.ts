@@ -347,3 +347,96 @@ export interface JapaneseSettings {
   /** Only ever set if the user explicitly records one — never inferred. */
   jlptSelfReported: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Meals — Night-Shift Chilled Meal + Work Wrap system
+// ---------------------------------------------------------------------------
+
+export type PantryItemType = "CHILLED_MEAL" | "FRUIT_POUCH" | "WRAP_COMPONENT" | "SNACK_COMPONENT";
+
+export interface PantryItem {
+  id: string;
+  itemType: PantryItemType;
+  title: string;
+  category: string;
+  /** Individual consumable units on hand — drives coverage/snack-set math. */
+  currentStock: number;
+  /** How many priced units (packs) to buy — drives the shopping basket. */
+  purchaseQuantity: number;
+  minStock: number | null;
+  targetStock: number | null;
+  price: number;
+  pricePer100g: number | null;
+  unitNote: string;
+  favourite: boolean;
+  rating: number | null; // 1-5
+  active: boolean;
+  reorderFlag: boolean;
+  lastEaten: string | null; // ISO
+  timesEaten: number;
+  notes: string;
+  updatedAt: string;
+}
+
+export interface MealSettings {
+  forwardGroceryBudget: number;
+  takeawayConvenienceBudget: number;
+}
+
+// ---------------------------------------------------------------------------
+// Money — debt-avalanche + bills + transactions
+// ---------------------------------------------------------------------------
+
+export interface DebtAccount {
+  id: string;
+  title: string;
+  balance: number;
+  startingBalance: number;
+  /** null until the user confirms an actual rate — never assumed 0%. */
+  interestRate: number | null;
+  interestRateConfirmed: boolean;
+  monthlyFee: number | null;
+  baselineWeeklyPayment: number;
+  active: boolean;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MoneySettings {
+  baseDebtPool: number;
+  debtAccelerator: number;
+  balancedDebtPool: number;
+  emergencySavings: number;
+  debtSprintPool: number;
+  debtSprintEnabled: boolean;
+  acceleratorPaused: boolean;
+  manualTargetId: string | null;
+}
+
+export type BillFrequency = "WEEKLY" | "FORTNIGHTLY" | "MONTHLY" | "QUARTERLY" | "ANNUAL";
+
+export interface Bill {
+  id: string;
+  title: string;
+  amount: number;
+  dueDay: string;
+  frequency: BillFrequency;
+  notes: string;
+  active: boolean;
+  updatedAt: string;
+}
+
+export type TransactionType = "debt_payment" | "bill_payment" | "purchase" | "takeaway" | "other";
+
+export interface ExpenseTransaction {
+  id: string;
+  type: TransactionType;
+  title: string;
+  amount: number;
+  debtId: string | null;
+  source: string;
+  dateTime: string;
+  operationalDay: string;
+  notes: string;
+}

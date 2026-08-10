@@ -8,6 +8,8 @@ import HrStudyPage from "./pages/HrStudyPage";
 import AuslanPage from "./pages/AuslanPage";
 import EscrimaPage from "./pages/EscrimaPage";
 import JapanesePage from "./pages/JapanesePage";
+import MealsPage from "./pages/MealsPage";
+import MoneyPage from "./pages/MoneyPage";
 import ComingSoonPage from "./pages/ComingSoonPage";
 
 const NAV_ITEMS: { id: string; label: string; icon: string; ready: boolean }[] = [
@@ -16,11 +18,11 @@ const NAV_ITEMS: { id: string; label: string; icon: string; ready: boolean }[] =
   { id: "routines", label: "Routines", icon: "◷", ready: true },
   { id: "hr", label: "HR Study", icon: "▤", ready: true },
   { id: "auslan", label: "Auslan", icon: "✋", ready: true },
-  { id: "meals", label: "Meals", icon: "♨", ready: false },
+  { id: "meals", label: "Meals", icon: "♨", ready: true },
   { id: "chores", label: "Chores", icon: "⌂", ready: false },
   { id: "escrima", label: "Escrima", icon: "⚔", ready: true },
   { id: "japanese", label: "Japanese", icon: "字", ready: true },
-  { id: "money", label: "Money", icon: "$", ready: false },
+  { id: "money", label: "Money", icon: "$", ready: true },
   { id: "health", label: "Health", icon: "♡", ready: false },
   { id: "life-admin", label: "Life Admin", icon: "▣", ready: false },
   { id: "weekly-reset", label: "Weekly Reset", icon: "↻", ready: false },
@@ -78,6 +80,8 @@ export default function App() {
         {page === "auslan" && <AuslanPage />}
         {page === "escrima" && <EscrimaPage />}
         {page === "japanese" && <JapanesePage />}
+        {page === "meals" && <MealsPage />}
+        {page === "money" && <MoneyPage />}
         {page === "settings" && <SettingsPage data={data} />}
         {page !== "today" &&
           page !== "tasks" &&
@@ -86,6 +90,8 @@ export default function App() {
           page !== "auslan" &&
           page !== "escrima" &&
           page !== "japanese" &&
+          page !== "meals" &&
+          page !== "money" &&
           page !== "settings" && (
           <ComingSoonPage label={NAV_ITEMS.find((n) => n.id === page)?.label ?? ""} />
         )}

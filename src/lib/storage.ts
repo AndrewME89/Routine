@@ -1,6 +1,9 @@
 import type {
   AppSettings,
   AuslanPreferences,
+  Bill,
+  DebtAccount,
+  ExpenseTransaction,
   HrAssessment,
   HrCourseSettings,
   HrModule,
@@ -13,6 +16,9 @@ import type {
   LearningResource,
   LearningSession,
   LearningTopic,
+  MealSettings,
+  MoneySettings,
+  PantryItem,
   RoutineOccurrence,
   RoutineStepDef,
   Task,
@@ -25,7 +31,7 @@ const DB_NAME = "nightshift-os";
 // Bumping this only ever ADDS object stores in onupgradeneeded — existing
 // stores and their data are left alone, so this is a safe, additive
 // migration, not a reset.
-const DB_VERSION = 7;
+const DB_VERSION = 9;
 const STORE_SETTINGS = "settings";
 const STORE_OCCURRENCES = "occurrences";
 const STORE_TASKS = "tasks";
@@ -44,9 +50,17 @@ const STORE_JAPANESE_WORKSHEETS = "japanese_worksheets";
 const STORE_JAPANESE_SETTINGS = "japanese_settings";
 const STORE_FLASHCARDS = "learning_flashcards";
 const STORE_ROUTINE_STEPS = "routine_steps";
+const STORE_PANTRY_ITEMS = "pantry_items";
+const STORE_MEAL_SETTINGS = "meal_settings";
+const STORE_DEBT_ACCOUNTS = "debt_accounts";
+const STORE_BILLS = "bills";
+const STORE_EXPENSE_TRANSACTIONS = "expense_transactions";
+const STORE_MONEY_SETTINGS = "money_settings";
 const SETTINGS_KEY = "app";
 const AUSLAN_PREFS_KEY = "auslan";
 const JAPANESE_SETTINGS_KEY = "japanese";
+const MEAL_SETTINGS_KEY = "meals";
+const MONEY_SETTINGS_KEY = "money";
 const HR_COURSE_SETTINGS_KEY = "hr";
 
 function openDb(): Promise<IDBDatabase> {
@@ -116,6 +130,26 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORE_ROUTINE_STEPS)) {
         db.createObjectStore(STORE_ROUTINE_STEPS, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_PANTRY_ITEMS)) {
+        const store = db.createObjectStore(STORE_PANTRY_ITEMS, { keyPath: "id" });
+        store.createIndex("byItemType", "itemType");
+      }
+      if (!db.objectStoreNames.contains(STORE_MEAL_SETTINGS)) {
+        db.createObjectStore(STORE_MEAL_SETTINGS);
+      }
+      if (!db.objectStoreNames.contains(STORE_DEBT_ACCOUNTS)) {
+        db.createObjectStore(STORE_DEBT_ACCOUNTS, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_BILLS)) {
+        db.createObjectStore(STORE_BILLS, { keyPath: "id" });
+      }
+      if (!db.objectStoreNames.contains(STORE_EXPENSE_TRANSACTIONS)) {
+        const store = db.createObjectStore(STORE_EXPENSE_TRANSACTIONS, { keyPath: "id" });
+        store.createIndex("byType", "type");
+      }
+      if (!db.objectStoreNames.contains(STORE_MONEY_SETTINGS)) {
+        db.createObjectStore(STORE_MONEY_SETTINGS);
       }
     };
     req.onsuccess = () => resolve(req.result);
@@ -225,6 +259,140 @@ export async function saveRoutineStep(step: RoutineStepDef): Promise<void> {
 
 export async function deleteRoutineStep(id: string): Promise<void> {
   await withStore(STORE_ROUTINE_STEPS, "readwrite", (s) => s.delete(id));
+}
+
+// --- Meals / pantry ---------------------------------------------------
+
+export async function seedPantryItemsIfEmpty(items: PantryItem[]): Promise<void> {
+  await putAllIfEmpty(STORE_PANTRY_ITEMS, items);
+}
+
+export async function loadPantryItems(): Promise<PantryItem[]> {
+  return getAllFromStore<PantryItem>(STORE_PANTRY_ITEMS);
+}
+
+export async function savePantryItem(item: PantryItem): Promise<void> {
+  await withStore(STORE_PANTRY_ITEMS, "readwrite", (s) => s.put(item));
+}
+
+export async function saveManyPantryItems(items: PantryItem[]): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(STORE_PANTRY_ITEMS, "readwrite");
+    const store = tx.objectStore(STORE_PANTRY_ITEMS);
+    for (const item of items) store.put(item);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function deletePantryItem(id: string): Promise<void> {
+  await withStore(STORE_PANTRY_ITEMS, "readwrite", (s) => s.delete(id));
+}
+
+const DEFAULT_MEAL_SETTINGS: MealSettings = {
+  forwardGroceryBudget: 120,
+  takeawayConvenienceBudget: 45,
+};
+
+export async function loadMealSettings(): Promise<MealSettings> {
+  try {
+    const stored = await withStore<MealSettings | undefined>(STORE_MEAL_SETTINGS, "readonly", (s) =>
+      s.get(MEAL_SETTINGS_KEY)
+    );
+    if (!stored) return DEFAULT_MEAL_SETTINGS;
+    return { ...DEFAULT_MEAL_SETTINGS, ...stored };
+  } catch {
+    return DEFAULT_MEAL_SETTINGS;
+  }
+}
+
+export async function saveMealSettings(settings: MealSettings): Promise<void> {
+  await withStore(STORE_MEAL_SETTINGS, "readwrite", (s) => s.put(settings, MEAL_SETTINGS_KEY));
+}
+
+// --- Money --------------------------------------------------------------
+
+export async function loadDebtAccounts(): Promise<DebtAccount[]> {
+  return getAllFromStore<DebtAccount>(STORE_DEBT_ACCOUNTS);
+}
+
+export async function saveDebtAccount(debt: DebtAccount): Promise<void> {
+  await withStore(STORE_DEBT_ACCOUNTS, "readwrite", (s) => s.put(debt));
+}
+
+export async function deleteDebtAccount(id: string): Promise<void> {
+  await withStore(STORE_DEBT_ACCOUNTS, "readwrite", (s) => s.delete(id));
+}
+
+export async function loadBills(): Promise<Bill[]> {
+  return getAllFromStore<Bill>(STORE_BILLS);
+}
+
+export async function saveBill(bill: Bill): Promise<void> {
+  await withStore(STORE_BILLS, "readwrite", (s) => s.put(bill));
+}
+
+export async function deleteBill(id: string): Promise<void> {
+  await withStore(STORE_BILLS, "readwrite", (s) => s.delete(id));
+}
+
+export async function loadTransactions(): Promise<ExpenseTransaction[]> {
+  return getAllFromStore<ExpenseTransaction>(STORE_EXPENSE_TRANSACTIONS);
+}
+
+export async function saveTransaction(tx: ExpenseTransaction): Promise<void> {
+  await withStore(STORE_EXPENSE_TRANSACTIONS, "readwrite", (s) => s.put(tx));
+}
+
+export async function saveManyRecords(
+  debtUpdates: DebtAccount[],
+  transactions: ExpenseTransaction[]
+): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction([STORE_DEBT_ACCOUNTS, STORE_EXPENSE_TRANSACTIONS], "readwrite");
+    for (const d of debtUpdates) tx.objectStore(STORE_DEBT_ACCOUNTS).put(d);
+    for (const t of transactions) tx.objectStore(STORE_EXPENSE_TRANSACTIONS).put(t);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// Deliberately generic — no real budget figures ship in source. Andrew sets
+// his own baseline/accelerator/emergency numbers after deploying, and they
+// live only in his browser's storage.
+const DEFAULT_MONEY_SETTINGS: MoneySettings = {
+  baseDebtPool: 0,
+  debtAccelerator: 0,
+  balancedDebtPool: 0,
+  emergencySavings: 0,
+  debtSprintPool: 0,
+  debtSprintEnabled: false,
+  acceleratorPaused: false,
+  manualTargetId: null,
+};
+
+export async function loadMoneySettings(): Promise<MoneySettings> {
+  try {
+    const stored = await withStore<MoneySettings | undefined>(STORE_MONEY_SETTINGS, "readonly", (s) =>
+      s.get(MONEY_SETTINGS_KEY)
+    );
+    if (!stored) return DEFAULT_MONEY_SETTINGS;
+    return { ...DEFAULT_MONEY_SETTINGS, ...stored };
+  } catch {
+    return DEFAULT_MONEY_SETTINGS;
+  }
+}
+
+export async function saveMoneySettings(settings: MoneySettings): Promise<void> {
+  await withStore(STORE_MONEY_SETTINGS, "readwrite", (s) => s.put(settings, MONEY_SETTINGS_KEY));
 }
 
 export async function loadTasks(): Promise<Task[]> {
@@ -508,6 +676,12 @@ export async function exportAll(): Promise<{
   japaneseSettings: JapaneseSettings;
   flashcards: LearningFlashcard[];
   routineSteps: RoutineStepDef[];
+  pantryItems: PantryItem[];
+  mealSettings: MealSettings;
+  debtAccounts: DebtAccount[];
+  bills: Bill[];
+  transactions: ExpenseTransaction[];
+  moneySettings: MoneySettings;
 }> {
   const settings = await loadSettings();
   const occurrences = await getAllFromStore<RoutineOccurrence>(STORE_OCCURRENCES);
@@ -527,6 +701,12 @@ export async function exportAll(): Promise<{
   const japaneseSettings = await loadJapaneseSettings();
   const flashcards = await getAllFromStore<LearningFlashcard>(STORE_FLASHCARDS);
   const routineSteps = await loadRoutineSteps();
+  const pantryItems = await loadPantryItems();
+  const mealSettings = await loadMealSettings();
+  const debtAccounts = await loadDebtAccounts();
+  const bills = await loadBills();
+  const transactions = await loadTransactions();
+  const moneySettings = await loadMoneySettings();
   return {
     exportedAt: new Date().toISOString(),
     settings,
@@ -547,5 +727,11 @@ export async function exportAll(): Promise<{
     japaneseSettings,
     flashcards,
     routineSteps,
+    pantryItems,
+    mealSettings,
+    debtAccounts,
+    bills,
+    transactions,
+    moneySettings,
   };
 }
